@@ -18,7 +18,7 @@ const Order = base.define('Order', {
   estado: {
     type: DataTypes.STRING,
     allowNull: false,
-    defaultValue: 'pendiente',
+    defaultValue: 'Pendiente',
   },
   metodoPago: {
     type: DataTypes.STRING,
@@ -28,6 +28,10 @@ const Order = base.define('Order', {
     type: DataTypes.DATE,
     allowNull: false,
     defaultValue: DataTypes.NOW,
+  },
+  comprobante: {
+    type: DataTypes.STRING, 
+    allowNull: true, 
   },
 }, {
   tableName: 'orders',

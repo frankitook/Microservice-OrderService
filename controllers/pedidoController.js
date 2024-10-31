@@ -1,17 +1,37 @@
 const Pedido = require('../models/orderModel');
-
+const axios = require('axios');
 
 const crearPedido = async (req, res) => {
-    const { idOrder, metodoPago, total ,idCliente } = req.body;
-    const fecha = new Date(); 
+    const { metodoPago, idCliente } = req.body;
+    const fecha = new Date();
 
     try {
-        const nuevoPedido = await Pedido.create({ idOrder, idCliente ,metodoPago, total, fecha });
+        
+        const clienteResponse = await axios.get(`http://localhost:3000/usuarios/${idCliente}`);
+
+        
+        if (!clienteResponse.data) {
+            return res.status(404).json({ message: 'Cliente no encontrado' });
+        }
+
+        
+        const nuevoPedido = await Pedido.create({
+            idCliente,
+            metodoPago,
+            total: 0,
+            fecha
+        });
+
         res.status(201).json(nuevoPedido);
     } catch (error) {
+       
+        if (error.response && error.response.status === 404) {
+            return res.status(404).json({ message: 'Cliente no encontrado' });
+        }
         res.status(500).json({ message: 'Error al crear el pedido', error: error.message });
     }
 };
+
 
 
 const obtenerPedidos = async (req, res) => {
@@ -42,20 +62,21 @@ const obtenerPedidoPorId = async (req, res) => {
 
 const actualizarPedido = async (req, res) => {
     const { idOrder } = req.params;
-    const { metodoPago, total } = req.body;
+    const { metodoPago, total, estado, comprobante } = req.body; 
 
     try {
         const pedido = await Pedido.findOne({ where: { idOrder } });
         if (pedido) {
-            if (metodoPago !== undefined) {
-                pedido.metodoPago = metodoPago;
-            }
-            if (total !== undefined) {
-                pedido.total = total;
-            }
+            const nuevosDatos = {};
+            if (metodoPago !== undefined) nuevosDatos.metodoPago = metodoPago;
+            if (total !== undefined) nuevosDatos.total = total;
+            if (estado !== undefined) nuevosDatos.estado = estado;
+            if (comprobante !== undefined) nuevosDatos.comprobante = comprobante; 
 
-            await pedido.save();
-            res.json(pedido);
+            await pedido.update(nuevosDatos);
+
+            const pedidoActualizado = await Pedido.findOne({ where: { idOrder } });
+            res.json(pedidoActualizado);
         } else {
             res.status(404).json({ message: 'Pedido no encontrado' });
         }
@@ -63,6 +84,10 @@ const actualizarPedido = async (req, res) => {
         res.status(500).json({ message: 'Error al actualizar el pedido', error: error.message });
     }
 };
+
+
+
+
 
 
 const eliminarPedido = async (req, res) => {
@@ -87,7 +112,7 @@ const finalizarCompra = async (req, res) => {
     
     if (!idOrder) {
       return res.status(400).json({ message: 'El ID de la orden es requerido en los parámetros de la URL.' });
-    }
+    }else{
   
     try {
       
@@ -137,6 +162,7 @@ const finalizarCompra = async (req, res) => {
     }
     } catch (error) {
       res.status(500).json({ message: 'Error al finalizar la compra', error: error.message });
+    }
     }
   };
 
