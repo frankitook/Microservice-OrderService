@@ -2,11 +2,11 @@ const Pedido = require('../models/orderModel');
 
 
 const crearPedido = async (req, res) => {
-    const { idOrder, metodoPago, total } = req.body;
+    const { idOrder, metodoPago, total ,idCliente } = req.body;
     const fecha = new Date(); 
 
     try {
-        const nuevoPedido = await Pedido.create({ idOrder, metodoPago, total, fecha });
+        const nuevoPedido = await Pedido.create({ idOrder, idCliente ,metodoPago, total, fecha });
         res.status(201).json(nuevoPedido);
     } catch (error) {
         res.status(500).json({ message: 'Error al crear el pedido', error: error.message });
@@ -128,13 +128,10 @@ const finalizarCompra = async (req, res) => {
             throw new Error('Error al crear el pago');
         }
 
+        const paymentData = await paymentResponse.json();
+        const paymentUrl = paymentData.url;
 
-
-
-
-      
-  
-      res.json({ message: 'Pagando xd' });
+        res.json({ message: 'Pago creado exitosamente', url: paymentUrl });
     
     
     }
