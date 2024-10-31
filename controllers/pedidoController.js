@@ -1,5 +1,5 @@
 const Pedido = require('../models/orderModel');
-const axios = require('axios');
+
 
 const crearPedido = async (req, res) => {
     const { metodoPago, idCliente } = req.body;
@@ -7,10 +7,10 @@ const crearPedido = async (req, res) => {
 
     try {
         
-        const clienteResponse = await axios.get(`http://localhost:3000/usuarios/${idCliente}`);
+        const clienteResponse = await fetch(`http://localhost:3000/usuarios/${idCliente}`);
 
         
-        if (!clienteResponse.data) {
+        if (!clienteResponse.ok) {
             return res.status(404).json({ message: 'Cliente no encontrado' });
         }
 
@@ -18,16 +18,12 @@ const crearPedido = async (req, res) => {
         const nuevoPedido = await Pedido.create({
             idCliente,
             metodoPago,
-            total: 0,
+            total: 0,  
             fecha
         });
-
+        
         res.status(201).json(nuevoPedido);
     } catch (error) {
-       
-        if (error.response && error.response.status === 404) {
-            return res.status(404).json({ message: 'Cliente no encontrado' });
-        }
         res.status(500).json({ message: 'Error al crear el pedido', error: error.message });
     }
 };
