@@ -94,16 +94,48 @@ const finalizarCompra = async (req, res) => {
       const order = await Pedido.findOne({ where: { idOrder: idOrder } }); 
       if (!order) {
         return res.status(404).json({ message: 'Orden no encontrada.' });
-      }
+      }else{
   
-      
+        const { idCliente } = order;
+        const response = await fetch(`http://localhost:3000/usuarios/${idCliente}`);
+        const clienteData = await response.json();
+
+        const { street_name, street_number } = separa(clienteData.direccion);
+
+        const paymentDetails = {
+            id: idOrder,  
+            title: "Tienda Moto",  
+            description: "Venta de Artículo", 
+            amount: order.total, 
+            currency: 'ARS',  
+            name: clienteData.nombre,  
+            surname: clienteData.apellido,  
+            email: clienteData.email,  
+            zip_code: clienteData.codigoPostal,  
+            street_name: clienteData.street_name,  
+            street_number: clienteData.street_number  
+        };
+
       await order.update({ estado: 'Pagado' });
   
       res.json({ message: 'Compra finalizada exitosamente.' });
+    
+    
+    }
     } catch (error) {
       res.status(500).json({ message: 'Error al finalizar la compra', error: error.message });
     }
   };
+
+
+
+  const separa = (direccion) => {
+    const partes = direccion.trim().split(' ');
+    const street_number = Number(partes.pop()); 
+    const street_name = partes.join(' '); 
+    return { street_name, street_number }; 
+};
+
   
   module.exports = {
     crearPedido,
