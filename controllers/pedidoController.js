@@ -116,9 +116,25 @@ const finalizarCompra = async (req, res) => {
             street_number: clienteData.street_number  
         };
 
-      await order.update({ estado: 'Pagado' });
+        const paymentResponse = await fetch('http://localhost:3003/payment/crear-pago', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(paymentDetails)
+        });
+
+        if (!paymentResponse.ok) {
+            throw new Error('Error al crear el pago');
+        }
+
+
+
+
+
+      
   
-      res.json({ message: 'Compra finalizada exitosamente.' });
+      res.json({ message: 'Pagando xd' });
     
     
     }
