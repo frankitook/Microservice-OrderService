@@ -1,55 +1,71 @@
 const CartItem = require('../models/orderItemModel');
 const Order = require('../models/orderModel');
-const axios = require('axios');
 
 const PRODUCT_SERVICE_URL = 'http://localhost:3001/products';
 
+
 const agregarProductoAlCarrito = async (req, res) => {
-  const { idOrder, idProducto, cantidad } = req.params;
+    const { idOrder, idProducto, cantidad } = req.params;
 
-  try {
-    
-    const response = await axios.get(`${PRODUCT_SERVICE_URL}/${idProducto}`);
+    try {
+        const fetch = (await import('node-fetch')).default;
+        const response = await fetch(`${PRODUCT_SERVICE_URL}/${idProducto}`);
 
-    
-    if (response.status !== 200) {
-      return res.status(404).json({ message: 'Producto no encontrado' });
+        if (!response.ok) {
+            return res.status(404).json({ message: 'Producto no encontrado' });
+        }
+
+        const producto = await response.json();
+
+        
+        if (producto.stock === 0) {
+            return res.status(400).json({ message: 'No hay stock de este producto' });
+        } else{
+
+        
+        if (parseInt(cantidad) > producto.stock) {
+            return res.status(400).json({ message: 'No tenemos suficientes productos en stock' });
+        }else{
+
+        
+        const cartItemExistente = await CartItem.findOne({ where: { idOrder, idProducto } });
+
+        if (cartItemExistente) {
+            
+            cartItemExistente.cantidad += parseInt(cantidad);
+            await cartItemExistente.save();
+        } else {
+            
+            await CartItem.create({
+                idOrder,
+                idProducto,
+                cantidad: parseInt(cantidad),
+                precioUnitario: producto.precio
+            });
+        }
+
+       
+        const carrito = await CartItem.findAll({ where: { idOrder } });
+        const nuevoTotal = carrito.reduce((total, item) => {
+            return total + (item.cantidad * item.precioUnitario);
+        }, 0);
+
+       
+        await Order.update({ total: nuevoTotal }, { where: { idOrder } });
+
+       
+        res.status(201).json({ message: 'Producto agregado al carrito', nuevoTotal });
+      }
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Error al agregar el producto al carrito', error: error.message });
     }
-
-    const producto = response.data;
-
-    
-    const cartItemExistente = await CartItem.findOne({ where: { idOrder, idProducto } });
-
-    if (cartItemExistente) {
-      
-      cartItemExistente.cantidad += parseInt(cantidad);
-      await cartItemExistente.save();
-    } else {
-      
-      await CartItem.create({
-        idOrder,
-        idProducto,
-        cantidad: parseInt(cantidad),
-        precioUnitario: producto.precio
-      });
-    }
-
-    
-    const carrito = await CartItem.findAll({ where: { idOrder } });
-    const nuevoTotal = carrito.reduce((total, item) => {
-      return total + (item.cantidad * item.precioUnitario);
-    }, 0);
-
-   
-    await Order.update({ total: nuevoTotal }, { where: { idOrder } });
-
-    
-    res.status(201).json({ message: 'Producto agregado al carrito', nuevoTotal });
-  } catch (error) {
-    res.status(500).json({ message: 'Error al agregar el producto al carrito', error: error.message });
-  }
 };
+
+
+
+
+
   
 
 const obtenerCarrito = async (req, res) => {
