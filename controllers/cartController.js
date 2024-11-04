@@ -64,10 +64,6 @@ const agregarProductoAlCarrito = async (req, res) => {
 
 
 
-
-
-  
-
 const obtenerCarrito = async (req, res) => {
   const { idOrder } = req.params;
 
@@ -76,11 +72,12 @@ const obtenerCarrito = async (req, res) => {
 
     const carritoConDetalles = await Promise.all(
       carrito.map(async (item) => {
-        const response = await axios.get(`${PRODUCT_SERVICE_URL}/${item.idProducto}`);
+        const fetch = (await import('node-fetch')).default;
+        const response = await fetch(`${PRODUCT_SERVICE_URL}/${item.idProducto}`);
 
-        if (response.status !== 200) throw new Error('Error al obtener detalles del producto');
+        if (!response.ok) throw new Error('Error al obtener detalles del producto');
 
-        const producto = response.data;
+        const producto = await response.json();
         return {
           ...item.dataValues,
           descripcion: producto.descripcion,
@@ -94,6 +91,9 @@ const obtenerCarrito = async (req, res) => {
     res.status(500).json({ message: 'Error al obtener el carrito', error: error.message });
   }
 };
+
+
+
 
 const eliminarProductoDelCarrito = async (req, res) => {
   const { idOrder, idProducto } = req.params;
